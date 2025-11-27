@@ -12,7 +12,7 @@ public macro url(_ string: String) -> URL = #externalMacro(module: "FoundationMa
 // MARK: - Available
 
 @freestanding(expression)
-public macro osAvailable(_ string: String) -> URL = #externalMacro(module: "FoundationMacrosImpl", type: "OSAvailableMacro")
+public macro osAvailable(_ string: String) -> Bool = #externalMacro(module: "FoundationMacrosImpl", type: "OSAvailableMacro")
 
 // MARK: - CodingKeys
 
