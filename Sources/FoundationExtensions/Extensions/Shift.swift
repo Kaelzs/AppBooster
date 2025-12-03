@@ -12,7 +12,7 @@ public extension String {
         var result = ""
         do {
             let array = try self.unicodeScalars.map { scalar throws -> UnicodeScalar in
-                guard let result = UnicodeScalar(scalar.value + UInt32(offset)) else {
+                guard let result = UnicodeScalar(UInt32(Int(scalar.value) + offset)) else {
                     throw NSError()
                 }
                 return result

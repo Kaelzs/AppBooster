@@ -82,7 +82,7 @@ public struct ShiftEncodeMacro: ExpressionMacro {
         var result: String = ""
         do {
             let array =  try literalValue.unicodeScalars.map { scalar throws(Error) -> UnicodeScalar in
-                guard let result = UnicodeScalar(scalar.value + UInt32(shiftValue)) else {
+                guard let result = UnicodeScalar(UInt32(Int(scalar.value) + shiftValue)) else {
                     throw Error.invalidShiftString(literalValue)
                 }
                 return result
