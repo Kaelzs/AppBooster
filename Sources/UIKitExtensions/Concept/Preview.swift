@@ -6,6 +6,7 @@
 //
 
 #if canImport(SwiftUI)
+#if os(iOS)
 import SwiftUI
 
 struct PreviewControllerContainer<T: UIViewController>: UIViewControllerRepresentable {
@@ -71,4 +72,5 @@ public extension UIView {
     }
 }
 
+#endif
 #endif

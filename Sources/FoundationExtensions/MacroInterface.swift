@@ -24,3 +24,14 @@ public macro CodingKey(custom: String) = #externalMacro(module: "FoundationMacro
 
 @attached(peer)
 public macro CodingKeyIgnored() = #externalMacro(module: "FoundationMacrosImpl", type: "CodingKeyIgnoredMacro")
+
+// MARK: - Encode
+
+@freestanding(expression)
+public macro base64Encode(_ string: String) -> String = #externalMacro(module: "FoundationMacrosImpl", type: "Base64EncodeMacro")
+
+@freestanding(expression)
+public macro base64Decode(_ string: String) -> String = #externalMacro(module: "FoundationMacrosImpl", type: "Base64DecodeMacro")
+
+@freestanding(expression)
+public macro shiftEncode(_ string: String, by shift: Int) -> String = #externalMacro(module: "FoundationMacrosImpl", type: "ShiftEncodeMacro")
