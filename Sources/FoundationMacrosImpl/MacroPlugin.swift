@@ -15,6 +15,9 @@ struct Plugins: CompilerPlugin {
         OSAvailableMacro.self,
         CodingKeysMacro.self,
         CustomCodingKeyMacro.self,
-        CodingKeyIgnoredMacro.self
+        CodingKeyIgnoredMacro.self,
+        Base64EncodeMacro.self,
+        Base64DecodeMacro.self,
+        ShiftEncodeMacro.self,
     ]
 }
