@@ -18,6 +18,7 @@ let package = Package(
             name: "AppBooster",
             targets: [
                 "FoundationExtensions",
+                "LocalizationMacroInterface",
                 "UIKitExtensions",
             ]
         ),
@@ -31,6 +32,12 @@ let package = Package(
             name: "UIKitExtensions",
             targets: [
                 "UIKitExtensions",
+            ]
+        ),
+        .library(
+            name: "LocalizationMacroInterface",
+            targets: [
+                "LocalizationMacroInterface",
             ]
         ),
     ],
@@ -73,6 +80,37 @@ let package = Package(
             name: "FoundationMacrosTests",
             dependencies: [
                 "FoundationExtensions",
+                "FoundationMacrosImpl",
+                .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
+                .product(name: "MacroTesting", package: "swift-macro-testing"),
+            ]
+        ),
+
+        // MARK: - Localization Macros
+
+        .target(
+            name: "LocalizationMacroShared"
+        ),
+        .macro(
+            name: "LocalizationMacrosImpl",
+            dependencies: [
+                "LocalizationMacroShared",
+                "MacroExtensions",
+            ]
+        ),
+        .target(
+            name: "LocalizationMacroInterface",
+            dependencies: [
+                "LocalizationMacrosImpl",
+                "LocalizationMacroShared",
+                "MacroExtensions",
+            ]
+        ),
+        .testTarget(
+            name: "LocalizationMacroTests",
+            dependencies: [
+                "LocalizationMacroInterface",
+                "LocalizationMacrosImpl",
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
                 .product(name: "MacroTesting", package: "swift-macro-testing"),
             ]
@@ -102,6 +140,7 @@ let package = Package(
             name: "UIKitMacrosTests",
             dependencies: [
                 "UIKitExtensions",
+                "UIKitMacrosImpl",
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
                 .product(name: "MacroTesting", package: "swift-macro-testing"),
             ]
