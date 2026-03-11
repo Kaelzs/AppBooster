@@ -11,9 +11,10 @@ struct L10nCodegenTests {
 
             enum L10NDefinitions {
                 case settings_title
-                case limit_format(limit: Int)
+                case limit_format(limit: Int) // use limit count directly
                 case total_count(total: UInt)
                 case days_and_used_percentage(days: Int, percentage: Double)
+                case job_subJob_step_prefix // use space in western language for better readability
             }
         }
         """
@@ -40,7 +41,7 @@ struct L10nCodegenTests {
                 }
 
                 public static func limitFormat(limit: Int) -> String {
-                    let comment = "use %1${limit}lld to represent limit"
+                    let comment = "use %1${limit}lld to represent limit; use limit count directly"
                     let format = NSLocalizedString("limit_format", bundle: Self.bundle, comment: comment)
                     return __l10nReplace(format, replacements: ["%1${limit}lld": String(describing: limit)])
                 }
@@ -55,6 +56,10 @@ struct L10nCodegenTests {
                     let comment = "use %1${days}lld to represent days, use %2${percentage}lf to represent percentage"
                     let format = NSLocalizedString("days_and_used_percentage", bundle: Self.bundle, comment: comment)
                     return __l10nReplace(format, replacements: ["%1${days}lld": String(describing: days), "%2${percentage}lf": String(describing: percentage)])
+                }
+
+                public static var jobSubjobStepPrefix: String {
+                    NSLocalizedString("job_subJob_step_prefix", bundle: Self.bundle, comment: "use space in western language for better readability")
                 }
             }
             """

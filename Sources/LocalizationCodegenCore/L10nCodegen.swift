@@ -13,8 +13,8 @@ public struct L10nParameterSpec: Equatable {
 }
 
 public enum L10nCaseSpec: Equatable {
-    case plain(name: String)
-    case parameterized(name: String, parameters: [L10nParameterSpec])
+    case plain(name: String, comment: String?)
+    case parameterized(name: String, parameters: [L10nParameterSpec], comment: String?)
 }
 
 public struct L10nContainerSpec: Equatable {
@@ -184,18 +184,24 @@ public enum L10nCodegen {
 
     private static func render(case spec: L10nCaseSpec, accessPrefix: String, bundleName: String) -> String {
         switch spec {
-        case let .plain(name):
+        case let .plain(name, customComment):
+            let comment = customComment ?? ""
             return """
             \(accessPrefix)static var \(camelCase(name)): String {
-                NSLocalizedString("\(name)", bundle: Self.\(bundleName), comment: "")
+                NSLocalizedString("\(name)", bundle: Self.\(bundleName), comment: "\(comment)")
             }
             """
-        case let .parameterized(name, parameters):
+        case let .parameterized(name, parameters, customComment):
             let functionName = camelCase(name)
             let signature = parameters.map { "\($0.name): \($0.swiftType)" }.joined(separator: ", ")
-            let comment = parameters.enumerated().map { index, parameter in
+            let generatedComment = parameters.enumerated().map { index, parameter in
                 "use %\(index + 1)${\(parameter.name)}\(parameter.placeholder) to represent \(parameter.name)"
             }.joined(separator: ", ")
+            let comment = if let customComment, !customComment.isEmpty {
+                "\(generatedComment); \(customComment)"
+            } else {
+                generatedComment
+            }
             let replacements = parameters.enumerated().map { index, parameter in
                 "\"%\(index + 1)${\(parameter.name)}\(parameter.placeholder)\": String(describing: \(parameter.name))"
             }.joined(separator: ", ")
@@ -215,11 +221,13 @@ public enum L10nCodegen {
             return []
         }
 
-        let remainder = line[caseRange.upperBound...]
-        return try splitTopLevelCommaSeparated(String(remainder)).map { rawCase in
+        let remainder = String(line[caseRange.upperBound...])
+        let (caseSource, customComment) = splitInlineComment(from: remainder)
+
+        return try splitTopLevelCommaSeparated(caseSource).map { rawCase in
             let trimmed = rawCase.trimmingCharacters(in: .whitespaces)
             guard let firstParen = trimmed.firstIndex(of: "(") else {
-                return .plain(name: trimmed)
+                return .plain(name: trimmed, comment: customComment)
             }
 
             guard let lastParen = trimmed.lastIndex(of: ")") else {
@@ -229,7 +237,7 @@ public enum L10nCodegen {
             let name = String(trimmed[..<firstParen])
             let parametersSlice = trimmed[trimmed.index(after: firstParen)..<lastParen]
             let parameters = try parseParameters(from: String(parametersSlice))
-            return .parameterized(name: name, parameters: parameters)
+            return .parameterized(name: name, parameters: parameters, comment: customComment)
         }
     }
 
@@ -291,6 +299,16 @@ public enum L10nCodegen {
         }
 
         return results
+    }
+
+    private static func splitInlineComment(from source: String) -> (String, String?) {
+        guard let range = source.range(of: "//") else {
+            return (source, nil)
+        }
+
+        let declaration = String(source[..<range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        let comment = String(source[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+        return (declaration, comment.isEmpty ? nil : comment)
     }
 
     private static func indent(_ source: String) -> String {
