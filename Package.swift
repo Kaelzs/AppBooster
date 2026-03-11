@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.1
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import CompilerPluginSupport
@@ -18,7 +18,6 @@ let package = Package(
             name: "AppBooster",
             targets: [
                 "FoundationExtensions",
-                "LocalizationMacroInterface",
                 "UIKitExtensions",
             ]
         ),
@@ -34,10 +33,10 @@ let package = Package(
                 "UIKitExtensions",
             ]
         ),
-        .library(
-            name: "LocalizationMacroInterface",
+        .plugin(
+            name: "LocalizationBuildPlugin",
             targets: [
-                "LocalizationMacroInterface",
+                "LocalizationBuildPlugin",
             ]
         ),
     ],
@@ -86,33 +85,28 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Localization Macros
+        // MARK: - Localization Codegen
 
         .target(
-            name: "LocalizationMacroShared"
+            name: "LocalizationCodegenCore"
         ),
-        .macro(
-            name: "LocalizationMacrosImpl",
+        .executableTarget(
+            name: "LocalizationCodegenGenerator",
             dependencies: [
-                "LocalizationMacroShared",
-                "MacroExtensions",
+                "LocalizationCodegenCore",
             ]
         ),
-        .target(
-            name: "LocalizationMacroInterface",
+        .plugin(
+            name: "LocalizationBuildPlugin",
+            capability: .buildTool(),
             dependencies: [
-                "LocalizationMacrosImpl",
-                "LocalizationMacroShared",
-                "MacroExtensions",
+                "LocalizationCodegenGenerator",
             ]
         ),
         .testTarget(
-            name: "LocalizationMacroTests",
+            name: "LocalizationCodegenTests",
             dependencies: [
-                "LocalizationMacroInterface",
-                "LocalizationMacrosImpl",
-                .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
-                .product(name: "MacroTesting", package: "swift-macro-testing"),
+                "LocalizationCodegenCore",
             ]
         ),
 

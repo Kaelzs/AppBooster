@@ -40,7 +40,7 @@ import Foundation
 
     public extension Mutex where Value: ~Copyable {
         /// Calls the given closure after acquiring the lock and then releases ownership.
-        public borrowing func withLock<Result: ~Copyable, E: Error>(
+        borrowing func withLock<Result: ~Copyable, E: Error>(
             _ body: (inout sending Value) throws(E) -> sending Result
         ) throws(E) -> sending Result {
             _lock.lock()
@@ -49,7 +49,7 @@ import Foundation
         }
 
         /// Attempts to acquire the lock and then calls the given closure if successful.
-        public borrowing func withLockIfAvailable<Result: ~Copyable, E: Error>(
+        borrowing func withLockIfAvailable<Result: ~Copyable, E: Error>(
             _ body: (inout sending Value) throws(E) -> sending Result
         ) throws(E) -> sending Result? {
             guard _lock.try() else { return nil }
@@ -77,7 +77,7 @@ import Foundation
     extension Mutex: @unchecked Sendable {}
 
     public extension Mutex {
-        public borrowing func withLock<Result>(
+        borrowing func withLock<Result>(
             _ body: (inout Value) throws -> Result
         ) rethrows -> Result {
             _lock.lock()
@@ -85,7 +85,7 @@ import Foundation
             return try body(&_box.value)
         }
 
-        public borrowing func withLockIfAvailable<Result>(
+        borrowing func withLockIfAvailable<Result>(
             _ body: (inout Value) throws -> Result
         ) rethrows -> Result? {
             guard _lock.try() else { return nil }
@@ -96,15 +96,15 @@ import Foundation
 #endif
 
 public extension Mutex where Value == Void {
-    public borrowing func _unsafeLock() {
+    borrowing func _unsafeLock() {
         _lock.lock()
     }
 
-    public borrowing func _unsafeTryLock() -> Bool {
+    borrowing func _unsafeTryLock() -> Bool {
         _lock.try()
     }
 
-    public borrowing func _unsafeUnlock() {
+    borrowing func _unsafeUnlock() {
         _lock.unlock()
     }
 }
