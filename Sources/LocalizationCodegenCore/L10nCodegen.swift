@@ -153,8 +153,9 @@ public enum L10nCodegen {
     }
 
     public static func render(container spec: L10nContainerSpec) -> String {
-        let publicPrefix = spec.accessModifier.map { "\($0) " } ?? ""
-        let members = spec.cases.map { render(case: $0, accessPrefix: publicPrefix, bundleName: spec.bundleName) }.joined(separator: "\n\n")
+        let extensionPrefix = spec.accessModifier.map { "\($0) " } ?? ""
+        let memberPrefix = spec.accessModifier == nil ? "" : ""
+        let members = spec.cases.map { render(case: $0, accessPrefix: memberPrefix, bundleName: spec.bundleName) }.joined(separator: "\n\n")
 
         return """
         private extension \(spec.name) {
@@ -167,7 +168,7 @@ public enum L10nCodegen {
             }
         }
 
-        \(publicPrefix)extension \(spec.name) {
+        \(extensionPrefix)extension \(spec.name) {
         \(indent(members))
         }
         """
