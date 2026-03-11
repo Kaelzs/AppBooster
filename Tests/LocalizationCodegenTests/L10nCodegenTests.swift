@@ -41,20 +41,17 @@ struct L10nCodegenTests {
                 }
 
                 static func limitFormat(limit: Int) -> String {
-                    let comment = "use %1${limit}lld to represent limit; use limit count directly"
-                    let format = NSLocalizedString("limit_format", bundle: Self.bundle, comment: comment)
+                    let format = NSLocalizedString("limit_format", bundle: Self.bundle, comment: "use %1${limit}lld to represent limit; use limit count directly")
                     return __l10nReplace(format, replacements: ["%1${limit}lld": String(describing: limit)])
                 }
 
                 static func totalCount(total: UInt) -> String {
-                    let comment = "use %1${total}llu to represent total"
-                    let format = NSLocalizedString("total_count", bundle: Self.bundle, comment: comment)
+                    let format = NSLocalizedString("total_count", bundle: Self.bundle, comment: "use %1${total}llu to represent total")
                     return __l10nReplace(format, replacements: ["%1${total}llu": String(describing: total)])
                 }
 
                 static func daysAndUsedPercentage(days: Int, percentage: Double) -> String {
-                    let comment = "use %1${days}lld to represent days, use %2${percentage}lf to represent percentage"
-                    let format = NSLocalizedString("days_and_used_percentage", bundle: Self.bundle, comment: comment)
+                    let format = NSLocalizedString("days_and_used_percentage", bundle: Self.bundle, comment: "use %1${days}lld to represent days, use %2${percentage}lf to represent percentage")
                     return __l10nReplace(format, replacements: ["%1${days}lld": String(describing: days), "%2${percentage}lf": String(describing: percentage)])
                 }
 

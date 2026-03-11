@@ -209,8 +209,7 @@ public enum L10nCodegen {
 
             return """
             \(accessPrefix)static func \(functionName)(\(signature)) -> String {
-                let comment = "\(comment)"
-                let format = NSLocalizedString("\(name)", bundle: Self.\(bundleName), comment: comment)
+                let format = NSLocalizedString("\(name)", bundle: Self.\(bundleName), comment: "\(comment)")
                 return __l10nReplace(format, replacements: [\(replacements)])
             }
             """
