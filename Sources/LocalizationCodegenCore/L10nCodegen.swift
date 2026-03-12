@@ -35,6 +35,7 @@ public enum L10nCodegenError: Error, CustomStringConvertible, Equatable {
     case missingBundle(String)
     case unsupportedAssociatedValues(String)
     case invalidParameter(String)
+    case tooManyParameters(String, Int)
 
     public var description: String {
         switch self {
@@ -44,6 +45,8 @@ public enum L10nCodegenError: Error, CustomStringConvertible, Equatable {
             return "only Int, UInt, Double, and String parameters are supported, invalid parameter on '\(name)'"
         case let .invalidParameter(typeName):
             return "only Int, UInt, Double, and String parameters are supported, invalid parameter '\(typeName)'"
+        case let .tooManyParameters(name, count):
+            return "'\(name)' has \(count) parameters, but at most 5 are supported"
         }
     }
 }
@@ -152,20 +155,45 @@ public enum L10nCodegen {
         return containers
     }
 
-    public static func render(container spec: L10nContainerSpec) -> String {
+    public static func renderFile(from source: String) throws -> String {
+        let specs = try parseContainers(in: source)
+        guard !specs.isEmpty else {
+            return ""
+        }
+
+        return try "import Foundation\n\n" + specs.map(render(container:)).joined(separator: "\n\n")
+    }
+
+    public static func render(container spec: L10nContainerSpec) throws -> String {
         let extensionPrefix = spec.accessModifier.map { "\($0) " } ?? ""
         let memberPrefix = spec.accessModifier == nil ? "" : ""
-        let members = spec.cases.map { render(case: $0, accessPrefix: memberPrefix, bundleName: spec.bundleName) }.joined(separator: "\n\n")
+        let members = try spec.cases.map { try render(case: $0, accessPrefix: memberPrefix, bundleName: spec.bundleName) }.joined(separator: "\n\n")
 
         return """
         private extension \(spec.name) {
-            private static func __l10nReplace(_ format: String, replacements: [(String, () -> String)]) -> String {
+            private static func __l10nReplace(
+                _ format: String,
+                token1: String? = nil, value1: @autoclosure () -> String = "",
+                token2: String? = nil, value2: @autoclosure () -> String = "",
+                token3: String? = nil, value3: @autoclosure () -> String = "",
+                token4: String? = nil, value4: @autoclosure () -> String = "",
+                token5: String? = nil, value5: @autoclosure () -> String = ""
+            ) -> String {
                 var result = format
-                for entry in replacements.sorted(by: { $0.0.count > $1.0.count }) {
-                    guard result.contains(entry.0) else {
-                        continue
-                    }
-                    result = result.replacingOccurrences(of: entry.0, with: entry.1())
+                if let token1, result.contains(token1) {
+                    result = result.replacingOccurrences(of: token1, with: value1())
+                }
+                if let token2, result.contains(token2) {
+                    result = result.replacingOccurrences(of: token2, with: value2())
+                }
+                if let token3, result.contains(token3) {
+                    result = result.replacingOccurrences(of: token3, with: value3())
+                }
+                if let token4, result.contains(token4) {
+                    result = result.replacingOccurrences(of: token4, with: value4())
+                }
+                if let token5, result.contains(token5) {
+                    result = result.replacingOccurrences(of: token5, with: value5())
                 }
                 return result
             }
@@ -177,16 +205,7 @@ public enum L10nCodegen {
         """
     }
 
-    public static func renderFile(from source: String) throws -> String {
-        let specs = try parseContainers(in: source)
-        guard !specs.isEmpty else {
-            return ""
-        }
-
-        return "import Foundation\n\n" + specs.map(render(container:)).joined(separator: "\n\n")
-    }
-
-    private static func render(case spec: L10nCaseSpec, accessPrefix: String, bundleName: String) -> String {
+    private static func render(case spec: L10nCaseSpec, accessPrefix: String, bundleName: String) throws -> String {
         switch spec {
         case let .plain(name, customComment):
             let comment = customComment ?? ""
@@ -196,6 +215,9 @@ public enum L10nCodegen {
             }
             """
         case let .parameterized(name, parameters, customComment):
+            guard parameters.count <= 5 else {
+                throw L10nCodegenError.tooManyParameters(name, parameters.count)
+            }
             let functionName = camelCase(name)
             let signature = parameters.map { "\($0.name): @autoclosure () -> \($0.swiftType)" }.joined(separator: ", ")
             let generatedComment = parameters.enumerated().map { index, parameter in
@@ -206,19 +228,30 @@ public enum L10nCodegen {
             } else {
                 generatedComment
             }
-            let replacements = parameters.enumerated().map { index, parameter in
-                "(\"%\(index + 1)${\(parameter.name)}\(parameter.placeholder)\", { String(describing: \(parameter.name)()) })"
+            let replacementArguments = parameters.enumerated().map { index, parameter in
+                "token\(index + 1): \"%\(index + 1)${\(parameter.name)}\(parameter.placeholder)\", value\(index + 1): String(describing: \(parameter.name)())"
             }
-            let replacementsBlock = replacements.enumerated().map { index, replacement in
-                index < replacements.count - 1 ? "\(replacement)," : replacement
+
+            if replacementArguments.count == 1, let argument = replacementArguments.first {
+                return """
+                \(accessPrefix)static func \(functionName)(\(signature)) -> String {
+                    let format = NSLocalizedString("\(name)", bundle: Self.\(bundleName), comment: "\(comment)")
+                    return __l10nReplace(format, \(argument))
+                }
+                """
+            }
+
+            let replacementBlock = replacementArguments.enumerated().map { index, argument in
+                index < replacementArguments.count - 1 ? "\(argument)," : argument
             }.joined(separator: "\n")
 
             return """
             \(accessPrefix)static func \(functionName)(\(signature)) -> String {
                 let format = NSLocalizedString("\(name)", bundle: Self.\(bundleName), comment: "\(comment)")
-                return __l10nReplace(format, replacements: [
-            \(indent(replacementsBlock, spaces: 8))
-                ])
+                return __l10nReplace(
+                    format,
+            \(indent(replacementBlock, spaces: 8))
+                )
             }
             """
         }
