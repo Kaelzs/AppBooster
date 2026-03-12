@@ -34,9 +34,9 @@ let package = Package(
             ]
         ),
         .plugin(
-            name: "LocalizationBuildPlugin",
+            name: "LocalizationCommandPlugin",
             targets: [
-                "LocalizationBuildPlugin",
+                "LocalizationCommandPlugin",
             ]
         ),
     ],
@@ -97,8 +97,18 @@ let package = Package(
             ]
         ),
         .plugin(
-            name: "LocalizationBuildPlugin",
-            capability: .buildTool(),
+            name: "LocalizationCommandPlugin",
+            capability: .command(
+                intent: .custom(
+                    verb: "generate-localizations",
+                    description: "Generate checked-in localization source files from .l10ndef.swift templates."
+                ),
+                permissions: [
+                    .writeToPackageDirectory(
+                        reason: "This command generates .generated.swift localization source files next to their templates."
+                    ),
+                ]
+            ),
             dependencies: [
                 "LocalizationCodegenGenerator",
             ]
