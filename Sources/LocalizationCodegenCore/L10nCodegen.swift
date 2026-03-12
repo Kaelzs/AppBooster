@@ -159,10 +159,13 @@ public enum L10nCodegen {
 
         return """
         private extension \(spec.name) {
-            private static func __l10nReplace(_ format: String, replacements: [String: String]) -> String {
+            private static func __l10nReplace(_ format: String, replacements: [(String, () -> String)]) -> String {
                 var result = format
-                for entry in replacements.sorted(by: { $0.key.count > $1.key.count }) {
-                    result = result.replacingOccurrences(of: entry.key, with: entry.value)
+                for entry in replacements.sorted(by: { $0.0.count > $1.0.count }) {
+                    guard result.contains(entry.0) else {
+                        continue
+                    }
+                    result = result.replacingOccurrences(of: entry.0, with: entry.1())
                 }
                 return result
             }
@@ -194,7 +197,7 @@ public enum L10nCodegen {
             """
         case let .parameterized(name, parameters, customComment):
             let functionName = camelCase(name)
-            let signature = parameters.map { "\($0.name): \($0.swiftType)" }.joined(separator: ", ")
+            let signature = parameters.map { "\($0.name): @autoclosure () -> \($0.swiftType)" }.joined(separator: ", ")
             let generatedComment = parameters.enumerated().map { index, parameter in
                 "use %\(index + 1)${\(parameter.name)}\(parameter.placeholder) to represent \(parameter.name)"
             }.joined(separator: ", ")
@@ -204,13 +207,18 @@ public enum L10nCodegen {
                 generatedComment
             }
             let replacements = parameters.enumerated().map { index, parameter in
-                "\"%\(index + 1)${\(parameter.name)}\(parameter.placeholder)\": String(describing: \(parameter.name))"
-            }.joined(separator: ", ")
+                "(\"%\(index + 1)${\(parameter.name)}\(parameter.placeholder)\", { String(describing: \(parameter.name)()) })"
+            }
+            let replacementsBlock = replacements.enumerated().map { index, replacement in
+                index < replacements.count - 1 ? "\(replacement)," : replacement
+            }.joined(separator: "\n")
 
             return """
             \(accessPrefix)static func \(functionName)(\(signature)) -> String {
                 let format = NSLocalizedString("\(name)", bundle: Self.\(bundleName), comment: "\(comment)")
-                return __l10nReplace(format, replacements: [\(replacements)])
+                return __l10nReplace(format, replacements: [
+            \(indent(replacementsBlock, spaces: 8))
+                ])
             }
             """
         }
@@ -312,10 +320,15 @@ public enum L10nCodegen {
     }
 
     private static func indent(_ source: String) -> String {
-        source
+        indent(source, spaces: 4)
+    }
+
+    private static func indent(_ source: String, spaces: Int) -> String {
+        let prefix = String(repeating: " ", count: spaces)
+        return source
             .split(separator: "\n", omittingEmptySubsequences: false)
             .map { line in
-                line.isEmpty ? "" : "    \(line)"
+                line.isEmpty ? "" : "\(prefix)\(line)"
             }
             .joined(separator: "\n")
     }
